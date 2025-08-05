@@ -1,143 +1,181 @@
-# BuzzBerry Auth & Onboarding Platform
+# BuzzBerry AI - Authentication & Onboarding System
 
-A modern, scalable SaaS authentication and onboarding platform built with Next.js 14, Supabase, and Tailwind CSS.
+A modern, scalable SaaS authentication and onboarding codebase built with Next.js 14, Supabase, and Google Gemini AI.
 
 ## 🚀 Features
 
-- **🔐 Secure Authentication**: Google OAuth and email/password authentication
-- **🎨 Modern UI**: Dark mode design with responsive layouts
-- **📱 Mobile Optimized**: Fully responsive design with mobile-first approach
-- **🤖 AI Integration**: Gemini AI-powered chat functionality
-- **📊 Dashboard**: Comprehensive analytics and user management
-- **🔍 Discover Page**: Advanced creator discovery and filtering
-- **⚡ Performance**: Built with Next.js 14 for optimal performance
+### Authentication & User Management
+- **Google OAuth Integration** - Seamless sign-in with Google accounts
+- **Supabase Auth** - Robust user authentication and session management
+- **Invitation Code System** - Controlled access with invitation codes
+- **Dark Mode UI** - Beautiful, modern dark theme throughout the application
 
-## 🛠️ Tech Stack
+### AI-Powered Chat System
+- **Gemini AI Integration** - Advanced AI chat powered by Google Gemini
+- **Real-time Chat History** - Persistent chat sessions with full conversation context
+- **Chat Management** - Delete individual chats or clear all history
+- **Responsive UI** - Optimized for desktop and mobile devices
 
-- **Framework**: Next.js 14 (App Router)
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth
-- **Styling**: Tailwind CSS + shadcn/ui
+### Dashboard & Navigation
+- **Modular Dashboard** - Clean, organized dashboard with sidebar navigation
+- **AI Search Page** - Main interface for AI-powered creator discovery
+- **Discover Page** - Browse and filter creator database
+- **Profile Management** - User profile with Google integration
+
+## 🛠 Tech Stack
+
+- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes, Supabase
+- **Database**: PostgreSQL (via Supabase)
+- **Authentication**: Supabase Auth, Google OAuth
 - **AI**: Google Gemini API
-- **Deployment**: Vercel (recommended)
+- **UI Components**: Shadcn UI, Radix UI
+- **State Management**: React Hooks, Server Components
 
-## 📋 Prerequisites
+## 📁 Project Structure
 
-Before you begin, ensure you have:
-
-- Node.js 18+ installed
-- A Supabase account and project
-- Google Cloud Console access (for Gemini API)
-- Git installed
-
-## 🚀 Quick Start
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/BuzzBerryCode/Buzz.git
-cd Buzz
+```
+auth-onboarding-next.js/
+├── app/
+│   ├── api/                    # API routes
+│   │   ├── ai-chat/           # AI chat functionality
+│   │   ├── chat-history/      # Chat history management
+│   │   └── chat-session/      # Chat session handling
+│   ├── auth/                  # Authentication pages
+│   ├── dashboard/             # Dashboard pages
+│   │   ├── aisearch/         # AI Search interface
+│   │   ├── chat/             # Chat interface
+│   │   └── discover/         # Discover page
+│   ├── components/           # Reusable components
+│   │   ├── dashboard/        # Dashboard components
+│   │   └── ui/              # UI components
+│   ├── hooks/               # Custom React hooks
+│   ├── lib/                 # Utility libraries
+│   └── globals.css          # Global styles
+├── public/                  # Static assets
+├── docs/                    # Documentation
+└── *.sql                   # Database migration files
 ```
 
-### 2. Install Dependencies
+## 🚀 Getting Started
 
-```bash
-npm install
-```
+### Prerequisites
 
-### 3. Environment Setup
+- Node.js 18+ 
+- npm or yarn
+- Supabase account
+- Google Cloud Console account (for Gemini API)
+- Google OAuth credentials
 
-Copy the example environment file and configure your variables:
+### Installation
 
-```bash
-cp .env.example .env.local
-```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/BuzzBerryCode/buzz-is-here.git
+   cd buzz-is-here
+   ```
 
-Update `.env.local` with your actual values:
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url_here
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env.local
+   ```
+   
+   Fill in your environment variables:
+   ```env
+   # Supabase Configuration
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
-# Google Gemini AI Configuration
-GEMINI_API_KEY=your_gemini_api_key_here
+   # Google Gemini AI Configuration
+   GEMINI_API_KEY=your_gemini_api_key
 
-# Next.js Configuration
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your_nextauth_secret_here
-```
+   # Next.js Configuration
+   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=your_nextauth_secret
 
-### 4. Database Setup
+   # Optional: Google OAuth
+   GOOGLE_CLIENT_ID=your_google_client_id
+   GOOGLE_CLIENT_SECRET=your_google_client_secret
+   ```
 
-Run the Supabase migration script:
+4. **Set up the database**
+   ```bash
+   # Run the main migration
+   psql -h your-supabase-host -U postgres -d postgres -f supabase-migration.sql
+   
+   # Run additional setup scripts as needed
+   psql -h your-supabase-host -U postgres -d postgres -f create-chat-functions.sql
+   psql -h your-supabase-host -U postgres -d postgres -f fix-chat-rls.sql
+   ```
 
-```bash
-# Copy the SQL from supabase-migration.sql and run it in your Supabase SQL editor
-```
+5. **Start the development server**
+   ```bash
+   npm run dev
+   ```
 
-### 5. Start Development Server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) to view the application.
+6. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## 🔧 Configuration
 
 ### Supabase Setup
 
 1. Create a new Supabase project
-2. Enable Google OAuth in Authentication → Providers
-3. Configure your OAuth redirect URLs
-4. Run the database migration script
-5. Set up Row Level Security (RLS) policies
+2. Enable Google OAuth in Authentication settings
+3. Configure your Google OAuth credentials
+4. Set up Row Level Security (RLS) policies
+5. Run the database migration scripts
 
 ### Google Gemini API
 
-1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Create a new API key
-3. Add it to your `.env.local` file
+1. Create a Google Cloud project
+2. Enable the Gemini API
+3. Create an API key
+4. Add the key to your environment variables
 
 ### Google OAuth
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing
-3. Enable Google+ API
-4. Create OAuth 2.0 credentials
-5. Add authorized redirect URIs
+1. Create OAuth 2.0 credentials in Google Cloud Console
+2. Add authorized redirect URIs:
+   - `http://localhost:3000/auth/callback` (development)
+   - `https://yourdomain.com/auth/callback` (production)
+3. Add credentials to environment variables
 
-## 📁 Project Structure
+## 📊 Database Schema
 
-```
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   ├── auth/              # Authentication pages
-│   ├── dashboard/         # Dashboard pages
-│   ├── components/        # Reusable components
-│   ├── hooks/            # Custom React hooks
-│   ├── lib/              # Utility libraries
-│   └── types/            # TypeScript type definitions
-├── docs/                 # Documentation
-├── public/               # Static assets
-└── supabase-migration.sql # Database schema
-```
+### Core Tables
 
-## 🔒 Security
+- **users** - User profiles and authentication data
+- **chat_sessions** - AI chat conversation sessions
+- **chat_messages** - Individual messages within chat sessions
+- **creator_data** - Creator/influencer database
 
-### Environment Variables
+### Key Relationships
 
-- Never commit `.env.local` or any files containing real API keys
-- Use `.env.example` as a template for required variables
-- All sensitive keys are properly excluded in `.gitignore`
+- Users have many chat sessions
+- Chat sessions have many messages
+- Messages belong to chat sessions and users
 
-### Database Security
+## 🔐 Security Features
 
-- Row Level Security (RLS) is enabled on all tables
-- User authentication is required for all sensitive operations
-- API routes validate user sessions before processing requests
+- **Row Level Security (RLS)** - Database-level access control
+- **Session Management** - Secure cookie-based sessions
+- **API Route Protection** - Server-side authentication checks
+- **Environment Variable Protection** - Sensitive data excluded from version control
+
+## 🎨 UI/UX Features
+
+- **Dark Mode** - Consistent dark theme throughout
+- **Responsive Design** - Mobile-first approach
+- **Loading States** - Smooth loading indicators
+- **Error Handling** - User-friendly error messages
+- **Accessibility** - WCAG compliant components
 
 ## 🚀 Deployment
 
@@ -147,12 +185,13 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 2. Set environment variables in Vercel dashboard
 3. Deploy automatically on push to main branch
 
-### Manual Deployment
+### Other Platforms
 
-```bash
-npm run build
-npm start
-```
+The application can be deployed to any platform that supports Next.js:
+- Netlify
+- Railway
+- DigitalOcean App Platform
+- AWS Amplify
 
 ## 🤝 Contributing
 
@@ -164,26 +203,32 @@ npm start
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is proprietary software. All rights reserved.
 
 ## 🆘 Support
 
-If you encounter any issues:
+For support and questions:
+- Create an issue in the GitHub repository
+- Check the documentation in the `/docs` folder
+- Review the SQL migration files for database setup
 
-1. Check the [documentation](docs/)
-2. Search existing [issues](https://github.com/BuzzBerryCode/Buzz/issues)
-3. Create a new issue with detailed information
+## 🔄 Recent Updates
 
-## 🔄 Updates
+### Latest Features
+- ✅ Server-side API routes for improved performance
+- ✅ Enhanced chat history management
+- ✅ Improved UI with larger submit buttons
+- ✅ Immediate text clearing in chat input
+- ✅ Comprehensive database migration scripts
+- ✅ Dark mode optimization
+- ✅ Mobile-responsive design improvements
 
-Stay updated with the latest changes:
-
-```bash
-git pull origin main
-npm install
-npm run dev
-```
+### Performance Improvements
+- ✅ Removed loading overlays for faster chat loading
+- ✅ Optimized authentication flow
+- ✅ Improved session management
+- ✅ Better error handling and user feedback
 
 ---
 
-**Note**: This is a production-ready SaaS platform. Ensure you have proper security measures in place before deploying to production.
+**Built with ❤️ by the BuzzBerry Team**

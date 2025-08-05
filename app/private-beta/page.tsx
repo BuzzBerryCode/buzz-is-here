@@ -65,7 +65,7 @@ export default function PrivateBeta(): React.ReactElement | null {
       .from('invitation_codes')
       .update({ used: true, assigned_email: session.user.email })
       .eq('id', codeData.id);
-    router.push('/onboarding');
+    router.push('/dashboard');
   };
 
   if (!session) {
@@ -74,7 +74,7 @@ export default function PrivateBeta(): React.ReactElement | null {
   }
 
   return (
-    <div className="min-h-screen w-full bg-white">
+    <div className="min-h-screen w-full bg-gray-900">
       {/* Mobile Layout - Video Background with Content Overlay */}
       <div className="lg:hidden h-screen w-full relative overflow-hidden bg-black">
         {/* Video Background */}
@@ -85,7 +85,7 @@ export default function PrivateBeta(): React.ReactElement | null {
         {/* Content Overlay */}
         <div className="absolute inset-0 h-full flex flex-col justify-center items-center p-6" style={{ zIndex: 10 }}>
           {/* Content Box */}
-          <div className="bg-white/90 backdrop-blur-md rounded-3xl p-6 shadow-2xl border border-white/30 w-full max-w-sm">
+          <div className="bg-black/95 backdrop-blur-md rounded-3xl p-6 shadow-2xl border border-gray-700/50 w-full max-w-sm">
             {/* Logo */}
             <div className="flex justify-center mb-4">
               <div className="inline-flex items-center gap-2">
@@ -97,8 +97,8 @@ export default function PrivateBeta(): React.ReactElement | null {
                 />
                 <img
                   className="w-[80px] h-4 object-contain"
-                  alt="Buzzberry black logo"
-                  src="/Buzzberry black logo(4) 1.png"
+                  alt="Buzzberry Logo"
+                  src="/buzzberry-white-logo.png"
                   onError={(e) => {
                     console.error('Failed to load Buzzberry logo');
                     e.currentTarget.style.display = 'none';
@@ -109,10 +109,10 @@ export default function PrivateBeta(): React.ReactElement | null {
 
             {/* Main Content */}
             <div className="text-center space-y-3 mb-6">
-              <h1 className="text-2xl font-bold text-[#1e1e1e] leading-tight">
+              <h1 className="text-2xl font-bold text-white leading-tight">
                 Login Successful
               </h1>
-              <p className="text-[#757575] text-sm leading-relaxed">
+              <p className="text-gray-300 text-sm leading-relaxed">
                 We're currently in private beta.<br />
                 Please enter your invitation code.
               </p>
@@ -120,39 +120,39 @@ export default function PrivateBeta(): React.ReactElement | null {
             {/* Form Fields */}
             <form onSubmit={handleInvitationSubmit} className="space-y-3 mb-4">
               <div className="space-y-1">
-                <label className="font-medium text-[#1e1e1e] text-xs block">
+                <label className="font-medium text-gray-200 text-xs block">
                   Invitation Code
                 </label>
                 <Input
                   value={invitationCode}
                   onChange={e => setInvitationCode(e.target.value)}
                   placeholder="Please enter your invitation code"
-                  className="h-[42px] px-3 py-2 bg-[#f8f9fa] rounded-xl border border-[#e9ecef] font-medium text-sm focus:ring-2 focus:ring-[#d266a3] focus:border-[#d266a3] focus:bg-white transition-all shadow-sm"
+                  className="h-[42px] px-3 py-2 bg-gray-700 rounded-xl border border-gray-600 font-medium text-sm focus:ring-2 focus:ring-gray-500 focus:border-gray-500 focus:bg-gray-600 transition-all shadow-sm text-white placeholder-gray-400"
                   required
                 />
               </div>
               {!!error && <div className="text-red-500 text-xs mb-2 text-center">{error}</div>}
-              <Button type="submit" className="w-full h-11 bg-[#d266a3] hover:bg-[#c15594] rounded-xl font-medium text-white text-base transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl mb-4" disabled={false}>
+              <Button type="submit" className="w-full h-11 bg-gray-700 hover:bg-gray-600 rounded-xl font-medium text-white text-base transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl mb-4 border border-gray-600" disabled={false}>
                 Continue
               </Button>
             </form>
 
             {/* Divider */}
             <div className="flex items-center justify-center gap-4 mb-4">
-              <Separator className="flex-1" />
-              <span className="font-medium text-[#959595] text-sm px-2">
+              <Separator className="flex-1 bg-gray-600" />
+              <span className="font-medium text-gray-400 text-sm px-2">
                 OR
               </span>
-              <Separator className="flex-1" />
+              <Separator className="flex-1 bg-gray-600" />
             </div>
 
             {/* Join Waitlist button */}
             <Button
               onClick={handleJoinWaitlist}
               variant="outline"
-              className="w-full h-10 flex items-center justify-center gap-3 px-4 py-2 rounded-xl border border-[#d266a3] hover:bg-gray-50 transition-all duration-200 hover:scale-[1.02] mb-3"
+              className="w-full h-10 flex items-center justify-center gap-3 px-4 py-2 rounded-xl border border-gray-600 hover:bg-gray-600 transition-all duration-200 hover:scale-[1.02] mb-3 bg-gray-700 text-white"
             >
-              <span className="font-medium text-[#545454] text-base">
+              <span className="font-medium text-gray-200 text-base">
                 Join Waitlist
               </span>
             </Button>
@@ -161,7 +161,7 @@ export default function PrivateBeta(): React.ReactElement | null {
             <div className="text-center">
               <button
                 onClick={handleLogout}
-                className="font-medium text-[#959595] text-xs hover:text-[#d266a3] transition-colors underline"
+                className="font-medium text-gray-400 text-xs hover:text-[#d266a3] transition-colors underline"
               >
                 Log Out
               </button>
@@ -202,9 +202,9 @@ export default function PrivateBeta(): React.ReactElement | null {
           </div>
 
           {/* Right panel - Login section */}
-          <div className="flex-1 h-full flex items-center justify-center p-8">
+          <div className="flex-1 h-full flex items-center justify-center p-8 bg-black">
             <div className="w-full max-w-md" style={{ zIndex: 10, position: 'relative' }}>
-              <Card className="w-full bg-white border-none shadow-none">
+              <Card className="w-full bg-black border-none shadow-none">
                 <CardContent className="p-0 space-y-8">
                   {/* Logo and headline section */}
                   <div className="text-center space-y-4">
@@ -218,8 +218,8 @@ export default function PrivateBeta(): React.ReactElement | null {
                       />
                       <img
                         className="w-[90px] h-4 object-contain"
-                        alt="Buzzberry black logo"
-                        src="/Buzzberry black logo(4) 1.png"
+                        alt="Buzzberry Logo"
+                        src="/buzzberry-white-logo.png"
                         onError={(e) => {
                           console.error('Failed to load Buzzberry logo');
                           e.currentTarget.style.display = 'none';
@@ -229,13 +229,13 @@ export default function PrivateBeta(): React.ReactElement | null {
 
                     {/* Headline */}
                     <div className="space-y-1">
-                      <h1 className="font-bold text-[#1e1e1e] text-4xl xl:text-5xl text-center tracking-tight leading-tight">
+                      <h1 className="font-bold text-white text-4xl xl:text-5xl text-center tracking-tight leading-tight">
                         Login Successful
                       </h1>
                     </div>
 
                     {/* Tagline */}
-                    <p className="text-[#757575] text-lg text-center leading-relaxed">
+                    <p className="text-gray-300 text-lg text-center leading-relaxed">
                       We're currently in private beta.
                       <br />
                       Please enter your invitation code.
@@ -246,14 +246,14 @@ export default function PrivateBeta(): React.ReactElement | null {
                   <form onSubmit={handleInvitationSubmit} className="space-y-6">
                     {/* Invitation Code field */}
                     <div className="space-y-2">
-                      <label className="font-medium text-[#1e1e1e] text-xs block">
+                      <label className="font-medium text-gray-200 text-xs block">
                         Invitation Code
                       </label>
                       <Input
                         value={invitationCode}
                         onChange={e => setInvitationCode(e.target.value)}
                         placeholder="Please enter your invitation code"
-                        className="h-[46px] px-3 py-2 bg-[#f0f0f0] rounded-lg border border-[#ebebeb] font-medium text-base focus:ring-2 focus:ring-[#d266a3] focus:border-transparent transition-all"
+                        className="h-[46px] px-3 py-2 bg-gray-700 rounded-lg border border-gray-600 font-medium text-base focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all text-white placeholder-gray-400"
                         required
                       />
                     </div>
@@ -268,19 +268,19 @@ export default function PrivateBeta(): React.ReactElement | null {
                     </Button>
                     {/* Divider */}
                     <div className="flex items-center justify-center gap-4">
-                      <Separator className="flex-1" />
-                      <span className="font-medium text-[#959595] text-sm px-2">
+                      <Separator className="flex-1 bg-gray-600" />
+                      <span className="font-medium text-gray-400 text-sm px-2">
                         OR
                       </span>
-                      <Separator className="flex-1" />
+                      <Separator className="flex-1 bg-gray-600" />
                     </div>
                     {/* Join Waitlist button */}
                     <Button
                       onClick={handleJoinWaitlist}
                       variant="outline"
-                      className="w-full h-11 flex items-center justify-center gap-3 px-5 py-2 rounded-lg border border-[#d266a3] hover:bg-gray-50 transition-all duration-200 hover:scale-[1.02]"
+                      className="w-full h-11 flex items-center justify-center gap-3 px-5 py-2 rounded-lg border border-gray-600 hover:bg-gray-600 transition-all duration-200 hover:scale-[1.02] bg-gray-700 text-white"
                     >
-                      <span className="font-medium text-[#545454] text-base">
+                      <span className="font-medium text-gray-200 text-base">
                         Join Waitlist
                       </span>
                     </Button>
@@ -288,7 +288,7 @@ export default function PrivateBeta(): React.ReactElement | null {
                     <div className="text-center">
                       <button
                         onClick={handleLogout}
-                        className="font-medium text-[#959595] text-sm hover:text-[#d266a3] transition-colors underline"
+                        className="font-medium text-gray-400 text-sm hover:text-[#d266a3] transition-colors underline"
                         type="button"
                       >
                         Log Out

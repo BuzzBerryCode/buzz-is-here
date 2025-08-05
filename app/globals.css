@@ -57,3 +57,45 @@
     @apply bg-background text-foreground;
   }
 } 
+
+/* Custom dark mode input focus styles */
+@layer components {
+  input:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
+    background-color: transparent !important;
+  }
+  
+  input:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
+    background-color: transparent !important;
+  }
+  
+  /* Override any default focus styles */
+  *:focus {
+    outline: none !important;
+  }
+  
+  /* Remove any focus shadows or overlays */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    box-shadow: none !important;
+    outline: none !important;
+    border: none !important;
+  }
+  
+  /* Remove Card component focus effects */
+  .focus-within {
+    box-shadow: none !important;
+  }
+  
+  /* Remove form focus effects */
+  form:focus-within {
+    box-shadow: none !important;
+    outline: none !important;
+  }
+} 

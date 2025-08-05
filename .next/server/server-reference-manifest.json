@@ -1,1 +1,14 @@
-{"node":{},"edge":{},"encryptionKey":"hfT1rSdV+sdo6fLpLPmmqmBRy7kqTjBmpbfrbPB2fz8="}
+{
+  "node": {
+    "ee723a82c673f44cc44eabee1b35ae5c26603afc": {
+      "workers": {
+        "app/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fodinlund%2FDesktop%2FBuzzBerry%2FBuzzyV1%2Fauth-onboarding-next.js%2Fapp%2Flogin%2Factions.ts%22%2C%5B%22login%22%5D%5D%5D&__client_imported__=!"
+      },
+      "layer": {
+        "app/page": "rsc"
+      }
+    }
+  },
+  "edge": {},
+  "encryptionKey": "puG6dt0J5Rg0ulSKygtGsmPhW05Oa5lnjJbGE+Uejg4="
+}

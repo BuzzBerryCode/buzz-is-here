@@ -1,4 +1,4 @@
-// File: /Users/odinlund/Desktop/BuzzBerry/Code/BuzzBerry Modular Flow/auth-onboarding-next.js/app/auth/callback/route.ts
+// File: /Users/odinlund/Desktop/BuzzBerry/BuzzyV1/auth-onboarding-next.js/app/auth/callback/route.ts
 import * as entry from '../../../../../app/auth/callback/route.js'
 import type { NextRequest } from 'next/server.js'
 

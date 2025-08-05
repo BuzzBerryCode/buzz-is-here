@@ -1,13 +1,6 @@
 {
-  "/_not-found": "app/_not-found.js",
-  "/api/oauth-redirect/route": "app/api/oauth-redirect/route.js",
-  "/oauth-handler/page": "app/oauth-handler/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
   "/page": "app/page.js",
-  "/private-beta/page": "app/private-beta/page.js",
   "/auth/callback/route": "app/auth/callback/route.js",
-  "/onboarding/page": "app/onboarding/page.js",
-  "/waitlist/page": "app/waitlist/page.js",
-  "/waitlist-success/page": "app/waitlist-success/page.js",
-  "/api/send-waitlist-email/route": "app/api/send-waitlist-email/route.js"
+  "/api/debug-oauth-url/route": "app/api/debug-oauth-url/route.js",
+  "/api/check-supabase-config/route": "app/api/check-supabase-config/route.js"
 }

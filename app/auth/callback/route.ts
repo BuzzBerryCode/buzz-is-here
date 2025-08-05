@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
   const error = url.searchParams.get('error')
   const errorDescription = url.searchParams.get('error_description')
   
-  console.log('=== OAUTH CALLBACK START ===')
   console.log('OAuth callback received:', { 
     code: !!code, 
     error, 
@@ -20,11 +19,28 @@ export async function GET(request: NextRequest) {
   if (error) {
     console.error('OAuth error:', error, errorDescription)
     
-    // If it's a database error, we need to fix the database permissions
+    // If it's a database error, try to handle it gracefully
     if (errorDescription?.includes('Database error saving new user')) {
-      console.log('Database error detected - this needs to be fixed in Supabase')
-      console.log('Please run the SQL commands in fix-oauth-database.sql in your Supabase SQL Editor')
-      return NextResponse.redirect(`http://localhost:3000?error=${encodeURIComponent('Database configuration error. Please contact support.')}`)
+      console.log('Database error detected - attempting to handle gracefully')
+      
+      try {
+        const supabase = createRouteHandlerClient({ cookies })
+        
+        // Try to get any existing session first
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session?.user) {
+          console.log('Existing session found despite database error, proceeding to dashboard')
+          return NextResponse.redirect('http://localhost:3000/dashboard')
+        }
+        
+        // If no session, redirect to signup page with helpful message
+        console.log('No session found, redirecting to signup page')
+        return NextResponse.redirect(`http://localhost:3000/signup?error=${encodeURIComponent('Please try signing up with email/password or contact support if the issue persists.')}`)
+      } catch (sessionError) {
+        console.log('Session check failed, redirecting to signup page')
+        return NextResponse.redirect(`http://localhost:3000/signup?error=${encodeURIComponent('Please try signing up with email/password or contact support if the issue persists.')}`)
+      }
     }
     
     return NextResponse.redirect(`http://localhost:3000?error=${encodeURIComponent(error)}&description=${encodeURIComponent(errorDescription || '')}`)
@@ -32,57 +48,55 @@ export async function GET(request: NextRequest) {
   
   if (code) {
     try {
-      console.log('Creating Supabase client for code exchange...')
       const supabase = createRouteHandlerClient({ cookies })
       
-      console.log('Exchanging code for session...')
       // Exchange the code for a session
       const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
       
       if (exchangeError) {
         console.error('Session exchange error:', exchangeError)
-        return NextResponse.redirect(`http://localhost:3000?error=${encodeURIComponent(exchangeError.message)}`)
+        
+        // If it's a database error, redirect to signup
+        if (exchangeError.message.includes('Database error')) {
+          return NextResponse.redirect(`http://localhost:3000/signup?error=${encodeURIComponent('Please try signing up with email/password or contact support if the issue persists.')}`)
+        }
+        
+        return NextResponse.redirect(`http://localhost:3000?error=${encodeURIComponent('Authentication failed. Please try again.')}`)
       }
       
       console.log('Session exchange successful:', { 
         user: data.user?.email,
         userId: data.user?.id,
-        session: !!data.session,
-        accessToken: !!data.session?.access_token,
-        refreshToken: !!data.session?.refresh_token
+        session: !!data.session 
       })
       
-      // Verify the session was created
-      console.log('Verifying session...')
+      // Verify the session was created and has a user
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       
       if (sessionError) {
         console.error('Session verification error:', sessionError)
-        return NextResponse.redirect(`http://localhost:3000?error=${encodeURIComponent('Session verification failed')}`)
+        return NextResponse.redirect(`http://localhost:3000?error=${encodeURIComponent('Session verification failed. Please try again.')}`)
       }
       
       if (!session?.user) {
         console.error('No user found in session after OAuth')
-        return NextResponse.redirect(`http://localhost:3000?error=${encodeURIComponent('No user found in session')}`)
+        return NextResponse.redirect(`http://localhost:3000?error=${encodeURIComponent('No user found in session. Please try again.')}`)
       }
       
       console.log('Session verified successfully:', { 
         hasSession: !!session, 
         userId: session.user.id,
         userEmail: session.user.email,
-        userCreatedAt: session.user.created_at,
-        accessToken: !!session.access_token,
-        expiresAt: session.expires_at
+        accessToken: !!session.access_token 
       })
       
       // Successfully authenticated - redirect to dashboard
       console.log('OAuth authentication successful, redirecting to dashboard')
-      console.log('=== OAUTH CALLBACK END ===')
       return NextResponse.redirect('http://localhost:3000/dashboard')
       
     } catch (err) {
       console.error('Unexpected error in callback:', err)
-      return NextResponse.redirect(`http://localhost:3000?error=${encodeURIComponent('Unexpected error during authentication')}`)
+      return NextResponse.redirect(`http://localhost:3000?error=${encodeURIComponent('Unexpected error during authentication. Please try again.')}`)
     }
   } else {
     console.error('No code received in callback')

@@ -1,32 +1,141 @@
--- Create onboarding_data table
-CREATE TABLE IF NOT EXISTS onboarding_data (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  niche TEXT NOT NULL,
-  website TEXT NOT NULL,
-  creator_description TEXT NOT NULL,
-  audience_size TEXT NOT NULL,
-  completed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Check and create onboarding_data table if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'onboarding_data') THEN
+        CREATE TABLE onboarding_data (
+            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+            user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+            niche TEXT NOT NULL,
+            website TEXT NOT NULL,
+            creator_description TEXT NOT NULL,
+            audience_size TEXT NOT NULL,
+            completed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+    END IF;
+END $$;
 
--- Create index for faster queries
+-- Check and create chat_sessions table if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'chat_sessions') THEN
+        CREATE TABLE chat_sessions (
+            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+            user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+            title TEXT,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+    END IF;
+END $$;
+
+-- Check and create chat_messages table if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'chat_messages') THEN
+        CREATE TABLE chat_messages (
+            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+            chat_session_id UUID REFERENCES chat_sessions(id) ON DELETE CASCADE,
+            user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+            role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+            content TEXT NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+    END IF;
+END $$;
+
+-- Check and create user_profiles table if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'user_profiles') THEN
+        CREATE TABLE user_profiles (
+            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+            user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+            full_name TEXT,
+            avatar_url TEXT,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+    END IF;
+END $$;
+
+-- Create indexes if they don't exist
 CREATE INDEX IF NOT EXISTS idx_onboarding_data_user_id ON onboarding_data(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_sessions_user_id ON chat_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON chat_messages(chat_session_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_user_id ON chat_messages(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
 
--- Enable Row Level Security
+-- Enable Row Level Security on all tables (safe to run multiple times)
 ALTER TABLE onboarding_data ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
--- Create policy to allow users to read their own onboarding data
+-- Drop existing policies if they exist and recreate them
+DROP POLICY IF EXISTS "Users can view own onboarding data" ON onboarding_data;
+DROP POLICY IF EXISTS "Users can insert own onboarding data" ON onboarding_data;
+DROP POLICY IF EXISTS "Users can update own onboarding data" ON onboarding_data;
+
+DROP POLICY IF EXISTS "Users can view own chat sessions" ON chat_sessions;
+DROP POLICY IF EXISTS "Users can insert own chat sessions" ON chat_sessions;
+DROP POLICY IF EXISTS "Users can update own chat sessions" ON chat_sessions;
+DROP POLICY IF EXISTS "Users can delete own chat sessions" ON chat_sessions;
+
+DROP POLICY IF EXISTS "Users can view own chat messages" ON chat_messages;
+DROP POLICY IF EXISTS "Users can insert own chat messages" ON chat_messages;
+DROP POLICY IF EXISTS "Users can update own chat messages" ON chat_messages;
+DROP POLICY IF EXISTS "Users can delete own chat messages" ON chat_messages;
+
+DROP POLICY IF EXISTS "Users can view own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON user_profiles;
+
+-- Create policies for onboarding_data
 CREATE POLICY "Users can view own onboarding data" ON onboarding_data
   FOR SELECT USING (auth.uid() = user_id);
 
--- Create policy to allow users to insert their own onboarding data
 CREATE POLICY "Users can insert own onboarding data" ON onboarding_data
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Create policy to allow users to update their own onboarding data
 CREATE POLICY "Users can update own onboarding data" ON onboarding_data
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- Create policies for chat_sessions
+CREATE POLICY "Users can view own chat sessions" ON chat_sessions
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own chat sessions" ON chat_sessions
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own chat sessions" ON chat_sessions
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own chat sessions" ON chat_sessions
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Create policies for chat_messages
+CREATE POLICY "Users can view own chat messages" ON chat_messages
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own chat messages" ON chat_messages
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own chat messages" ON chat_messages
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own chat messages" ON chat_messages
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Create policies for user_profiles
+CREATE POLICY "Users can view own profile" ON user_profiles
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own profile" ON user_profiles
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own profile" ON user_profiles
   FOR UPDATE USING (auth.uid() = user_id);
 
 -- Create function to automatically update updated_at
@@ -38,8 +147,21 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Create trigger to automatically update updated_at
+-- Create triggers to automatically update updated_at (safe to run multiple times)
+DROP TRIGGER IF EXISTS update_onboarding_data_updated_at ON onboarding_data;
 CREATE TRIGGER update_onboarding_data_updated_at 
   BEFORE UPDATE ON onboarding_data 
+  FOR EACH ROW 
+  EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_chat_sessions_updated_at ON chat_sessions;
+CREATE TRIGGER update_chat_sessions_updated_at 
+  BEFORE UPDATE ON chat_sessions 
+  FOR EACH ROW 
+  EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
+CREATE TRIGGER update_user_profiles_updated_at 
+  BEFORE UPDATE ON user_profiles 
   FOR EACH ROW 
   EXECUTE FUNCTION update_updated_at_column(); 

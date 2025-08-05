@@ -1,3 +1,5 @@
+'use client';
+
 import { login } from './login/actions';
 import { VideoBackground } from "./components/VideoBackground";
 import { MobileVideoBackground } from "./components/MobileVideoBackground";
@@ -6,9 +8,30 @@ import { Card, CardContent } from "./components/ui/card";
 import { Input } from "./components/ui/input";
 import { Separator } from "./components/ui/separator";
 import { GoogleSignInButton } from './components/GoogleSignInButton';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export default function Frame() {
-  // Using official Supabase OAuth method - no manual URL needed
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [error, setError] = useState('');
+  const [errorDescription, setErrorDescription] = useState('');
+
+  // Check for error parameter in URL
+  useEffect(() => {
+    const urlError = searchParams.get('error');
+    const urlErrorDescription = searchParams.get('description');
+    if (urlError) {
+      setError(decodeURIComponent(urlError));
+      }
+    if (urlErrorDescription) {
+      setErrorDescription(decodeURIComponent(urlErrorDescription));
+      }
+  }, [searchParams]);
+
+  const handleSignUpClick = () => {
+    router.push('/signup');
+  };
 
   return (
     <div className="min-h-screen w-full bg-gray-900">
@@ -29,6 +52,16 @@ export default function Frame() {
                 <img className="w-[80px] h-4 object-contain" alt="Buzzberry Logo" src="/buzzberry-white-logo.png" />
               </div>
             </div>
+            
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <p className="text-red-400 text-sm text-center">
+                  {errorDescription || error}
+                </p>
+              </div>
+            )}
+
             {/* Main Content */}
             <div className="text-center space-y-3 mb-6">
               <h1 className="text-2xl font-bold text-white leading-tight">Less Work<br />More Influence</h1>
@@ -62,6 +95,19 @@ export default function Frame() {
             </form>
             {/* Terms text */}
             <p className="font-medium text-gray-400 text-xs text-center leading-relaxed">By Clicking "continue", <br /> You Agree To The Terms Of Service And Privacy Policy</p>
+            
+            {/* Sign Up link */}
+            <div className="text-center mt-4">
+              <p className="text-gray-400 text-sm">
+                Don't have an account?{' '}
+                <button 
+                  onClick={handleSignUpClick}
+                  className="text-white hover:text-gray-300 underline"
+                >
+                  Sign up
+                </button>
+            </p>
+            </div>
           </div>
         </div>
       </div>
@@ -87,6 +133,16 @@ export default function Frame() {
                     {/* Tagline */}
                     <p className="text-gray-300 text-base text-center leading-relaxed">Creator marketing made effortless, fast and targeted.</p>
                   </div>
+                  
+                  {/* Error Message */}
+                  {error && (
+                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                      <p className="text-red-400 text-sm text-center">
+                        {errorDescription || error}
+                      </p>
+                    </div>
+                  )}
+
                   {/* Google Sign In Button */}
                   <GoogleSignInButton />
                   
@@ -114,6 +170,19 @@ export default function Frame() {
                   </form>
                     {/* Terms text */}
                   <p className="font-medium text-gray-400 text-sm text-center leading-relaxed">By Clicking "continue", <br /> You Agree To The Terms Of Service And Privacy Policy</p>
+                  
+                  {/* Sign Up link */}
+                  <div className="text-center">
+                    <p className="text-gray-400 text-sm">
+                      Don't have an account?{' '}
+                      <button 
+                        onClick={handleSignUpClick}
+                        className="text-white hover:text-gray-300 underline"
+                      >
+                        Sign up
+                      </button>
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             </div>

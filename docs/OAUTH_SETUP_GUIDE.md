@@ -8,7 +8,7 @@ Google OAuth is redirecting to `https://app.buzzberry.io` instead of `http://loc
 ### **Option 1: Update Supabase OAuth Settings (Recommended)**
 
 1. **Go to Supabase Dashboard**: https://supabase.com/dashboard
-2. **Select your project**: `unovwhgnwenxbyvpevcz`
+2. **Select your project**: `your_supabase_project_id`
 3. **Navigate to**: Authentication → Settings → URL Configuration
 4. **Update these settings**:
 

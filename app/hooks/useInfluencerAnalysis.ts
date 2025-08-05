@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { Influencer } from '@/lib/supabase'
+import { Influencer } from '../types/database';
 
 interface UseInfluencerAnalysisReturn {
   analysis: string

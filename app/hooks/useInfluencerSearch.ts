@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { Influencer, InfluencerSearchFilters } from '@/lib/supabase'
+import { Influencer, InfluencerSearchFilters } from '../types/database';
 
 interface UseInfluencerSearchReturn {
   influencers: Influencer[]

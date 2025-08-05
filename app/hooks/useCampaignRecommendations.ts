@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { CampaignRecommendation, Influencer } from '@/lib/supabase'
+import { Creator, CampaignRecommendation } from '../types/database';
 
 interface UseCampaignRecommendationsReturn {
   recommendations: CampaignRecommendation[]

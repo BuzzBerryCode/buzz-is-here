@@ -1,135 +1,189 @@
-# BuzzBerry Modular Flow
+# BuzzBerry Auth & Onboarding Platform
 
-Welcome to the BuzzBerry Modular Flow codebase! This project is organized for modular, scalable SaaS development with Next.js and Supabase.
+A modern, scalable SaaS authentication and onboarding platform built with Next.js 14, Supabase, and Tailwind CSS.
 
-## Documentation
+## 🚀 Features
 
-All detailed documentation has been moved to the [`docs/`](./docs/) folder. Please refer to that directory for guides, integration notes, and migration instructions.
+- **🔐 Secure Authentication**: Google OAuth and email/password authentication
+- **🎨 Modern UI**: Dark mode design with responsive layouts
+- **📱 Mobile Optimized**: Fully responsive design with mobile-first approach
+- **🤖 AI Integration**: Gemini AI-powered chat functionality
+- **📊 Dashboard**: Comprehensive analytics and user management
+- **🔍 Discover Page**: Advanced creator discovery and filtering
+- **⚡ Performance**: Built with Next.js 14 for optimal performance
 
-- [Onboarding Integration](./docs/ONBOARDING_INTEGRATION.md)
-- [OAuth Setup Guide](./docs/OAUTH_SETUP_GUIDE.md)
-- [Frontend Integration Summary](./docs/frontend-integration-summary.md)
-- [Migration README](./docs/MIGRATION_README.md)
+## 🛠️ Tech Stack
 
-For project structure and best practices, see the [Project Structure & Modularity Guide](#project-structure--modularity-guide) below.
+- **Framework**: Next.js 14 (App Router)
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Styling**: Tailwind CSS + shadcn/ui
+- **AI**: Google Gemini API
+- **Deployment**: Vercel (recommended)
 
----
+## 📋 Prerequisites
 
-## Getting started
+Before you begin, ensure you have:
 
-> **Prerequisites:**
-> The following steps require [NodeJS](https://nodejs.org/en/) to be installed on your system, so please
-> install it beforehand if you haven't already.
+- Node.js 18+ installed
+- A Supabase account and project
+- Google Cloud Console access (for Gemini API)
+- Git installed
 
-To get started with your project, you'll first need to install the dependencies with:
+## 🚀 Quick Start
 
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/BuzzBerryCode/Buzz.git
+cd Buzz
 ```
+
+### 2. Install Dependencies
+
+```bash
 npm install
 ```
 
-Then, you'll be able to run a development version of the project with:
+### 3. Environment Setup
 
+Copy the example environment file and configure your variables:
+
+```bash
+cp .env.example .env.local
 ```
+
+Update `.env.local` with your actual values:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url_here
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
+
+# Google Gemini AI Configuration
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Next.js Configuration
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your_nextauth_secret_here
+```
+
+### 4. Database Setup
+
+Run the Supabase migration script:
+
+```bash
+# Copy the SQL from supabase-migration.sql and run it in your Supabase SQL editor
+```
+
+### 5. Start Development Server
+
+```bash
 npm run dev
 ```
 
-After a few seconds, your project should be accessible at the address
-[http://localhost:5173/](http://localhost:5173/)
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
+## 🔧 Configuration
 
-If you are satisfied with the result, you can finally build the project for release with:
+### Supabase Setup
+
+1. Create a new Supabase project
+2. Enable Google OAuth in Authentication → Providers
+3. Configure your OAuth redirect URLs
+4. Run the database migration script
+5. Set up Row Level Security (RLS) policies
+
+### Google Gemini API
+
+1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Create a new API key
+3. Add it to your `.env.local` file
+
+### Google OAuth
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing
+3. Enable Google+ API
+4. Create OAuth 2.0 credentials
+5. Add authorized redirect URIs
+
+## 📁 Project Structure
 
 ```
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   ├── auth/              # Authentication pages
+│   ├── dashboard/         # Dashboard pages
+│   ├── components/        # Reusable components
+│   ├── hooks/            # Custom React hooks
+│   ├── lib/              # Utility libraries
+│   └── types/            # TypeScript type definitions
+├── docs/                 # Documentation
+├── public/               # Static assets
+└── supabase-migration.sql # Database schema
+```
+
+## 🔒 Security
+
+### Environment Variables
+
+- Never commit `.env.local` or any files containing real API keys
+- Use `.env.example` as a template for required variables
+- All sensitive keys are properly excluded in `.gitignore`
+
+### Database Security
+
+- Row Level Security (RLS) is enabled on all tables
+- User authentication is required for all sensitive operations
+- API routes validate user sessions before processing requests
+
+## 🚀 Deployment
+
+### Vercel (Recommended)
+
+1. Connect your GitHub repository to Vercel
+2. Set environment variables in Vercel dashboard
+3. Deploy automatically on push to main branch
+
+### Manual Deployment
+
+```bash
 npm run build
+npm start
 ```
 
-# Project Structure & Modularity Guide
+## 🤝 Contributing
 
-## Overview
-This project uses a modular, feature-based folder structure to ensure scalability, maintainability, and smooth deployment on Vercel. This guide documents the structure, naming conventions, and best practices for current and future development.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
----
+## 📝 License
 
-## Folder Structure
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## 🆘 Support
+
+If you encounter any issues:
+
+1. Check the [documentation](docs/)
+2. Search existing [issues](https://github.com/BuzzBerryCode/Buzz/issues)
+3. Create a new issue with detailed information
+
+## 🔄 Updates
+
+Stay updated with the latest changes:
+
+```bash
+git pull origin main
+npm install
+npm run dev
 ```
-app/
-  auth/                # Authentication pages and logic
-  onboarding/          # Onboarding flow
-  dashboard/           # Main dashboard and subpages
-    components/        # Dashboard-specific components
-    analytics/         # (future) Analytics pages
-    billing/           # (future) Billing pages
-    ai-assistant/      # (future) AI assistant pages
-  billing/             # (future) Billing UI and logic
-  api/                 # API routes (Stripe, Gemini, etc.)
-    billing/           # (future) Stripe webhooks, billing APIs
-    ai-assistant/      # (future) Gemini/AI APIs
-  components/          # Shared UI components
-    ui/                # Reusable UI primitives (Button, Card, etc.)
-  lib/                 # Shared utilities, Supabase client
-  types/               # Shared TypeScript types (create if missing)
-public/                # Static assets (images, videos, etc.)
-```
 
 ---
 
-## Best Practices
-
-- **Feature Folders:** Group code by feature, not by type. Each major feature (auth, onboarding, dashboard, billing, etc.) gets its own folder.
-- **Shared Code:** Place shared UI in `app/components/` and shared logic in `app/lib/`.
-- **API Routes:** Keep feature-specific API routes in `app/api/feature/`.
-- **Types:** Use `app/types/` for shared TypeScript types and interfaces.
-- **Assets:** Store all static assets in the root `public/` directory for Vercel compatibility. Remove any duplicate or misplaced assets from `app/public/`.
-- **Environment Variables:** Use `.env.local` for secrets and config. Never commit secrets.
-- **Naming:** Use lowercase, hyphen-separated folder names for features. Use PascalCase for React components.
-- **Testing:** Place tests in a `__tests__/` folder or alongside components as `Component.test.tsx`.
-- **Documentation:** Update this guide as the project evolves.
-
----
-
-## Adding New Features
-
-1. **Create a new folder under `app/` or `app/dashboard/` for the feature.**
-2. **Add UI components to a `components/` subfolder if needed.**
-3. **Add API routes under `app/api/feature/` if backend logic is required.**
-4. **Add shared types to `app/types/` if needed.**
-5. **Document any new patterns or conventions in this README.**
-
----
-
-## Example: Adding Billing (Stripe)
-
-- UI: `app/billing/`, `app/dashboard/billing/`
-- API: `app/api/billing/stripe-webhooks/route.ts`
-- Shared logic: `app/lib/stripe.ts` (if needed)
-- Types: `app/types/billing.ts`
-
----
-
-## Example: Adding AI Assistant (Gemini)
-
-- UI: `app/dashboard/ai-assistant/`
-- API: `app/api/ai-assistant/route.ts`
-- Shared logic: `app/lib/ai.ts` (if needed)
-- Types: `app/types/ai.ts`
-
----
-
-## Vercel Hosting
-- This structure is fully compatible with Vercel.
-- No custom server is needed.
-- Use environment variables for secrets.
-
----
-
-## Migration Checklist
-- [ ] Move all static assets to the root `public/` directory.
-- [ ] Create missing folders (`app/types/`, `app/billing/`, etc.) as needed.
-- [ ] Refactor feature code into their respective folders.
-- [ ] Remove unused or duplicate files.
-- [ ] Update this documentation as the project evolves.
-
----
-
-For any new feature or refactor, reference this guide to keep the codebase clean and modular.
+**Note**: This is a production-ready SaaS platform. Ensure you have proper security measures in place before deploying to production.

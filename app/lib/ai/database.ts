@@ -1,5 +1,4 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { supabase } from '../supabaseClient';
 import type { 
   ChatSession, 
   ChatMessage, 
@@ -17,8 +16,6 @@ export async function createChatSession(
 ): Promise<ChatSession | null> {
   try {
     console.log('Creating chat session:', { userId, title, subtitle });
-    
-    const supabase = createServerComponentClient({ cookies })
     
     const { data, error } = await supabase
       .from('chat_sessions')
@@ -46,8 +43,6 @@ export async function createChatSession(
 
 export async function getChatSessions(userId: string): Promise<ChatSession[]> {
   try {
-    const supabase = createServerComponentClient({ cookies })
-    
     const { data, error } = await supabase
       .from('chat_sessions')
       .select('*')
@@ -68,8 +63,6 @@ export async function updateChatSession(
   updates: Partial<Pick<ChatSession, 'title' | 'subtitle' | 'is_active'>>
 ): Promise<boolean> {
   try {
-    const supabase = createServerComponentClient({ cookies })
-    
     const { error } = await supabase
       .from('chat_sessions')
       .update(updates)
@@ -85,8 +78,6 @@ export async function updateChatSession(
 
 export async function deleteChatSession(sessionId: string): Promise<boolean> {
   try {
-    const supabase = createServerComponentClient({ cookies })
-    
     const { error } = await supabase
       .from('chat_sessions')
       .update({ is_active: false })
@@ -107,7 +98,7 @@ export async function createChatMessage(
   content: string
 ): Promise<ChatMessage | null> {
   try {
-    const supabase = createServerComponentClient({ cookies })
+    console.log('Creating chat message:', { sessionId, role, contentLength: content.length });
     
     const { data, error } = await supabase
       .from('chat_messages')
@@ -119,7 +110,12 @@ export async function createChatMessage(
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Supabase error creating chat message:', error);
+      throw error;
+    }
+    
+    console.log('Chat message created successfully:', data);
     return data
   } catch (error) {
     console.error('Error creating chat message:', error)
@@ -129,8 +125,6 @@ export async function createChatMessage(
 
 export async function getChatMessages(sessionId: string, limit: number = 50): Promise<ChatMessage[]> {
   try {
-    const supabase = createServerComponentClient({ cookies })
-    
     const { data, error } = await supabase
       .from('chat_messages')
       .select('*')
@@ -146,11 +140,9 @@ export async function getChatMessages(sessionId: string, limit: number = 50): Pr
   }
 }
 
-// System Prompt Functions
+// AI System Prompt Functions
 export async function getSystemPrompts(): Promise<AISystemPrompt[]> {
   try {
-    const supabase = createServerComponentClient({ cookies })
-    
     const { data, error } = await supabase
       .from('ai_system_prompts')
       .select('*')
@@ -167,8 +159,6 @@ export async function getSystemPrompts(): Promise<AISystemPrompt[]> {
 
 export async function getSystemPromptByName(name: string): Promise<AISystemPrompt | null> {
   try {
-    const supabase = createServerComponentClient({ cookies })
-    
     const { data, error } = await supabase
       .from('ai_system_prompts')
       .select('*')
@@ -187,8 +177,6 @@ export async function getSystemPromptByName(name: string): Promise<AISystemPromp
 // Chat Session Settings Functions
 export async function getChatSessionSettings(sessionId: string): Promise<ChatSessionSettings | null> {
   try {
-    const supabase = createServerComponentClient({ cookies })
-    
     const { data, error } = await supabase
       .from('chat_session_settings')
       .select('*')
@@ -208,8 +196,6 @@ export async function updateChatSessionSettings(
   settings: Partial<ChatSessionSettings>
 ): Promise<boolean> {
   try {
-    const supabase = createServerComponentClient({ cookies })
-    
     const { error } = await supabase
       .from('chat_session_settings')
       .upsert({
@@ -225,11 +211,9 @@ export async function updateChatSessionSettings(
   }
 }
 
-// Influencer Stats Functions
+// Influencer Database Functions (from existing database.ts)
 export async function getInfluencerStats(): Promise<InfluencerStats> {
   try {
-    const supabase = createServerComponentClient({ cookies })
-    
     const { data, error } = await supabase
       .from('creatordata')
       .select('*')
@@ -299,20 +283,16 @@ export async function getInfluencerStats(): Promise<InfluencerStats> {
   }
 }
 
-// Influencer Search Functions
 export async function searchInfluencers(
   query: string,
   filters: InfluencerSearchFilters,
   limit: number = 20
 ): Promise<any[]> {
   try {
-    const supabase = createServerComponentClient({ cookies })
-    
     let queryBuilder = supabase
       .from('creatordata')
       .select('*')
 
-    // Apply text search
     if (query && query.trim()) {
       const searchTerm = query.trim().toLowerCase()
       const cleanHandle = searchTerm.replace('@', '')
@@ -322,41 +302,34 @@ export async function searchInfluencers(
       )
     }
 
-    // Apply filters
     if (filters.platform) {
       queryBuilder = queryBuilder.eq('platform', filters.platform)
     }
-
     if (filters.primary_niche) {
       queryBuilder = queryBuilder.ilike('primary_niche', `%${filters.primary_niche}%`)
     }
-
     if (filters.min_followers) {
       queryBuilder = queryBuilder.gte('followers_count', filters.min_followers)
     }
-
     if (filters.max_followers) {
       queryBuilder = queryBuilder.lte('followers_count', filters.max_followers)
     }
-
     if (filters.min_engagement_rate) {
       queryBuilder = queryBuilder.gte('engagement_rate', filters.min_engagement_rate)
     }
-
     if (filters.location) {
       queryBuilder = queryBuilder.or(`location.ilike.%${filters.location}%,locationRegion.ilike.%${filters.location}%`)
     }
-
     if (filters.hashtags && filters.hashtags.length > 0) {
       const hashtagConditions = filters.hashtags.map(tag => `hashtags.cs.{${tag}}`).join(',')
       queryBuilder = queryBuilder.or(hashtagConditions)
     }
 
-    // Apply limit and ordering
+    queryBuilder = queryBuilder.order('engagement_rate', { ascending: false })
+    queryBuilder = queryBuilder.order('followers_count', { ascending: false })
+    queryBuilder = queryBuilder.limit(limit)
+
     const { data, error } = await queryBuilder
-      .order('engagement_rate', { ascending: false })
-      .order('followers_count', { ascending: false })
-      .limit(limit)
 
     if (error) throw error
     return data || []
@@ -368,8 +341,6 @@ export async function searchInfluencers(
 
 export async function getInfluencerByHandle(handle: string): Promise<any | null> {
   try {
-    const supabase = createServerComponentClient({ cookies })
-    
     const cleanHandle = handle.replace('@', '')
     
     const { data, error } = await supabase
@@ -381,7 +352,7 @@ export async function getInfluencerByHandle(handle: string): Promise<any | null>
     if (error) throw error
     return data
   } catch (error) {
-    console.error('Error fetching influencer by handle:', error)
+    console.error('Error getting influencer by handle:', error)
     return null
   }
 } 

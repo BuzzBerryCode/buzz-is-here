@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { UserList } from '@/lib/supabase'
+import { UserList } from '../types/database';
 
 interface UseUserListsProps {
   userId: string

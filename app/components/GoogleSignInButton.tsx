@@ -2,7 +2,11 @@
 
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
-export function GoogleSignInButton() {
+interface GoogleSignInButtonProps {
+  buttonText?: string;
+}
+
+export function GoogleSignInButton({ buttonText = "Sign In With Google" }: GoogleSignInButtonProps) {
   const supabase = createClientComponentClient();
 
   const handleClick = async () => {
@@ -52,7 +56,7 @@ export function GoogleSignInButton() {
       onClick={handleClick}
     >
       <img className="w-6 h-6 object-contain" alt="Google icon" src="/Google Icon 2.png" />
-      <span className="font-medium text-gray-200 text-base">Sign In With Google</span>
+      <span className="font-medium text-gray-200 text-base">{buttonText}</span>
     </button>
   );
 } 

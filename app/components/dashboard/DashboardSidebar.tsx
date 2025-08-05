@@ -13,8 +13,10 @@ import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
+import { User } from '@supabase/supabase-js';
 
 interface DashboardSidebarProps {
+  user: User;
   activeItem: string;
   onNavigate: (item: string) => void;
   onFeedbackClick: () => void;
@@ -74,39 +76,59 @@ const getFooterItems = (activeItem: string) => [
   },
 ];
 
-export function DashboardSidebar({ activeItem, onNavigate, onFeedbackClick, isCollapsed, onToggleCollapse }: DashboardSidebarProps) {
+export function DashboardSidebar({ user, activeItem, onNavigate, onFeedbackClick, isCollapsed, onToggleCollapse }: DashboardSidebarProps) {
   const router = useRouter();
   const navItems = getNavItems(activeItem);
   const footerItems = getFooterItems(activeItem);
   
-  // User state
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  // State
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   
   // State to track if we're on mobile (client-side only)
   const [isClientMobile, setIsClientMobile] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  // Effect to get user data
+  // Effect to set loading to false since user is passed as prop
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error) {
-          console.error('Error getting user:', error);
-        } else {
-          setUser(user);
-        }
-      } catch (error) {
-        console.error('Error getting user:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getUser();
+    // User is already available from props, so we're not loading
   }, []);
+
+  // Helper function to get user display name
+  const getUserDisplayName = () => {
+    if (!user) return 'User';
+    
+    // Try different possible locations for the name
+    const name = user.user_metadata?.full_name || 
+                 user.user_metadata?.name ||
+                 user.user_metadata?.display_name ||
+                 user.user_metadata?.given_name + ' ' + user.user_metadata?.family_name ||
+                 user.email?.split('@')[0] ||
+                 'User';
+    
+    return name;
+  };
+
+  // Helper function to get user avatar
+  const getUserAvatar = () => {
+    if (!user) return null;
+    
+    // Try different possible locations for the avatar
+    return user.user_metadata?.avatar_url || 
+           user.user_metadata?.picture ||
+           null;
+  };
+
+  // Helper function to get user initials
+  const getUserInitials = () => {
+    if (!user) return 'U';
+    
+    const displayName = getUserDisplayName();
+    if (displayName === 'User') {
+      return user.email?.charAt(0)?.toUpperCase() || 'U';
+    }
+    
+    return displayName.charAt(0).toUpperCase();
+  };
   
   // Effect to handle client-side mobile detection
   useEffect(() => {
@@ -272,16 +294,16 @@ export function DashboardSidebar({ activeItem, onNavigate, onFeedbackClick, isCo
                   <div className="p-4">
                     <div className="flex items-center gap-3 cursor-pointer transition-colors duration-200" onClick={toggleProfileMenu}>
                       <Avatar className="w-[35px] h-[35px] bg-[#d9d9d9] rounded-[999px]">
-                        {user?.user_metadata?.avatar_url && (
-                          <AvatarImage src={user.user_metadata.avatar_url} alt="Profile" />
+                        {getUserAvatar() && (
+                          <AvatarImage src={getUserAvatar()} alt="Profile" />
                         )}
                         <AvatarFallback>
-                          {user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                          {getUserInitials()}
                         </AvatarFallback>
                       </Avatar>
                     <div className="flex-1">
                         <div className="font-medium text-gray-50 text-[17px]">
-                          {loading ? 'Loading...' : user?.user_metadata?.full_name || user?.email || 'User'}
+                          {user ? getUserDisplayName() : 'Loading...'}
                         </div>
                       </div>
                       <div className={`transition-transform duration-200 ${showProfileMenu ? 'rotate-180' : ''}`}>
@@ -445,27 +467,27 @@ export function DashboardSidebar({ activeItem, onNavigate, onFeedbackClick, isCo
           }`}>
             {shouldCollapse ? (
               <Avatar className="w-[35px] h-[35px] bg-[#d9d9d9] rounded-[999px]">
-                {user?.user_metadata?.avatar_url && (
-                  <AvatarImage src={user.user_metadata.avatar_url} alt="Profile" />
+                {getUserAvatar() && (
+                  <AvatarImage src={getUserAvatar()} alt="Profile" />
                 )}
                 <AvatarFallback>
-                  {user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                  {getUserInitials()}
                 </AvatarFallback>
               </Avatar>
             ) : (
               <div className={`flex flex-col items-start relative flex-1 grow bg-[#1a2232] rounded-[15px] overflow-hidden profile-card transition-all duration-300 ease-in-out`}>
                 <div className="flex h-12 items-center gap-2.5 relative self-stretch w-full cursor-pointer transition-colors duration-200 p-3" onClick={toggleProfileMenu}>
                   <Avatar className="w-[35px] h-[35px] bg-[#d9d9d9] rounded-[999px]">
-                    {user?.user_metadata?.avatar_url && (
-                      <AvatarImage src={user.user_metadata.avatar_url} alt="Profile" />
+                    {getUserAvatar() && (
+                      <AvatarImage src={getUserAvatar()} alt="Profile" />
                     )}
                     <AvatarFallback>
-                      {user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                      {getUserInitials()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col h-12 items-start justify-center relative flex-1 grow">
                     <div className="relative w-fit font-medium text-gray-50 text-[17px]">
-                      {loading ? 'Loading...' : user?.user_metadata?.full_name || user?.email || 'User'}
+                      {user ? getUserDisplayName() : 'Loading...'}
                     </div>
                   </div>
 

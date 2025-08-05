@@ -33,13 +33,23 @@ export async function POST(request: NextRequest) {
       authError: authError?.message 
     });
 
-    if (authError || !user) {
-      console.log('Authentication error:', authError?.message);
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    // Use a fallback user ID if no authenticated user
+    let userId = user?.id;
+    if (!userId) {
+      console.log('No authenticated user found, using anonymous session');
+      // Try to get session for anonymous user
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        userId = session.user.id;
+        console.log('Using anonymous user ID:', userId);
+      } else {
+        // Create a temporary anonymous user ID for this session
+        userId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        console.log('Created temporary user ID:', userId);
+      }
     }
 
-    const userId = user.id;
-    console.log('Using authenticated user ID:', userId);
+    console.log('Using user ID:', userId);
 
     // Create or get chat session
     let currentSessionId = sessionId

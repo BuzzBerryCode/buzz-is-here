@@ -1,5 +1,5 @@
-import { supabase } from './supabaseClient'
-import type { UserList } from './supabase'
+import { supabase } from './supabaseClient';
+import type { UserList } from '../types/database';
 
 export async function getUserLists(userId: string): Promise<UserList[]> {
   try {

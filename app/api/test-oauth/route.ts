@@ -4,29 +4,18 @@ import { cookies } from 'next/headers'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('=== TESTING OAUTH CONFIGURATION ===')
-    
     const supabase = createRouteHandlerClient({ cookies })
     
-    // Test getting OAuth URL
-    console.log('Testing OAuth URL generation...')
+    // Test OAuth configuration
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: 'http://localhost:3000/auth/callback',
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
-      },
+        redirectTo: 'http://localhost:3000/auth/callback'
+      }
     })
-
-    console.log('OAuth URL test result:', { 
-      hasData: !!data, 
-      hasUrl: !!data?.url, 
-      error: error?.message 
-    })
-
+    
+    console.log('OAuth test result:', { data, error })
+    
     if (error) {
       return NextResponse.json({ 
         success: false, 
@@ -34,19 +23,19 @@ export async function GET(request: NextRequest) {
         details: error
       })
     }
-
+    
     return NextResponse.json({ 
       success: true, 
-      hasUrl: !!data?.url,
-      url: data?.url ? 'URL generated successfully' : 'No URL generated'
+      url: data.url,
+      provider: data.provider
     })
-
+    
   } catch (error) {
-    console.error('Test OAuth error:', error)
+    console.error('OAuth test error:', error)
     return NextResponse.json({ 
       success: false, 
       error: 'Unexpected error',
-      details: error
+      details: error instanceof Error ? error.message : 'Unknown error'
     })
   }
 } 

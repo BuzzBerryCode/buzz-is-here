@@ -1,5 +1,6 @@
 import { generateAIResponse } from './ai/gemini'
-import { Influencer, InfluencerSearchFilters, CampaignRecommendation } from './supabase'
+import { supabase } from './supabaseClient';
+import { RawCreator, InfluencerSearchFilters, CampaignRecommendation } from '../types/database';
 
 export const INFLUENCER_PROMPT_TEMPLATES = {
   SEARCH: `You are Buzzberry AI, an expert influencer marketing analyst with access to a comprehensive database of creators across all social media platforms.
@@ -86,7 +87,7 @@ export async function searchInfluencers(
 }
 
 export async function analyzeInfluencers(
-  influencers: Influencer[],
+  influencers: RawCreator[],
   campaignGoals: string
 ): Promise<string> {
   const influencerData = influencers.map(inf => `
@@ -109,7 +110,7 @@ export async function analyzeInfluencers(
 
 export async function generateCampaignRecommendation(
   chatContext: string,
-  selectedInfluencers: Influencer[]
+  selectedInfluencers: RawCreator[]
 ): Promise<string> {
   const influencerData = selectedInfluencers.map(inf => 
     `${inf.display_name} (@${inf.handle}) - ${inf.platform} - ${inf.followers_count.toLocaleString()} followers`
@@ -123,7 +124,7 @@ export async function generateCampaignRecommendation(
   return response.content
 }
 
-export function formatInfluencerForAI(influencer: Influencer): string {
+export function formatInfluencerForAI(influencer: RawCreator): string {
   return `
 ${influencer.display_name} (@${influencer.handle})
 Platform: ${influencer.platform}
@@ -142,6 +143,6 @@ Recent Performance Changes:
 - Views: ${influencer.average_views_change > 0 ? '+' : ''}${influencer.average_views_change} (${influencer.average_views_change_type})
 Buzz Score: ${influencer.buzz_score}
 Hashtags: ${influencer.hashtags.join(', ')}
-Past Brand Collaborations: ${influencer.past_ad_placements.join(', ')}
+Past Brand Collaborations: ${influencer.paid_ad_placements ? 'Yes' : 'No'}
   `.trim()
 } 

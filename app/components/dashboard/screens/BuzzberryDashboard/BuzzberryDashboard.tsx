@@ -20,10 +20,10 @@ export const BuzzberryDashboard = ({ initialPrompt }: BuzzberryDashboardProps): 
     setIsTransitioning(true);
     const encodedPrompt = encodeURIComponent(prompt);
     
-    // Add a small delay to ensure the transition overlay shows
+    // Reduced delay for faster transition
     setTimeout(() => {
       router.push(`/dashboard/chat?prompt=${encodedPrompt}`);
-    }, 50);
+    }, 25);
   };
 
   return (
@@ -113,7 +113,14 @@ export const BuzzberryDashboard = ({ initialPrompt }: BuzzberryDashboardProps): 
       <div className={`fixed top-0 right-0 h-full w-72 xs:w-80 transform transition-transform duration-300 ease-in-out z-40 ${
         isChatHistoryOpen ? 'translate-x-0' : 'translate-x-full'
       }`}>
-        <ChatHistorySection onClose={() => setIsChatHistoryOpen(false)} />
+        <ChatHistorySection 
+          onClose={() => setIsChatHistoryOpen(false)} 
+          onChatSelect={(chatId) => {
+            console.log('Loading chat from dashboard:', chatId)
+            // Navigate to chat page with the selected chat
+            router.push(`/dashboard/chat?sessionId=${chatId}`)
+          }}
+        />
       </div>
     </div>
   );

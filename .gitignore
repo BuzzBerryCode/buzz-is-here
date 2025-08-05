@@ -45,3 +45,6 @@ ehthumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Temporary directories
+temp-discover/

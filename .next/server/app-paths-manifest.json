@@ -1,6 +1,0 @@
-{
-  "/page": "app/page.js",
-  "/auth/callback/route": "app/auth/callback/route.js",
-  "/api/debug-oauth-url/route": "app/api/debug-oauth-url/route.js",
-  "/api/check-supabase-config/route": "app/api/check-supabase-config/route.js"
-}

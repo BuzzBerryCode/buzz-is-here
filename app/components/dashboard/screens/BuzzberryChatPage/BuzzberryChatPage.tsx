@@ -4,18 +4,27 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button";
 import { ChatHistorySection } from "../BuzzberryDashboard/sections/ChatHistorySection";
-import { useAIChat, type Message } from '@/hooks/useAIChat'
+import { useAIChat } from '@/hooks/useAIChat'
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { User } from '@supabase/supabase-js'
+
+interface Message {
+  id: string
+  content: string
+  role: 'user' | 'assistant'
+  timestamp: string
+}
 
 interface BuzzberryChatPageProps {
   initialPrompt?: string;
   onBack?: () => void;
+  user?: User;
 }
 
-export const BuzzberryChatPage = ({ initialPrompt, onBack }: BuzzberryChatPageProps): JSX.Element => {
+export const BuzzberryChatPage = ({ initialPrompt, onBack, user }: BuzzberryChatPageProps): JSX.Element => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [inputValue, setInputValue] = useState("");
-  const [isInitializing, setIsInitializing] = useState(false);
   const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(false);
   const [isPageLoaded, setIsPageLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -33,32 +42,76 @@ export const BuzzberryChatPage = ({ initialPrompt, onBack }: BuzzberryChatPagePr
     clearMessages, 
     removeChat, 
     clearHistory, 
-    formatTimestamp 
+    formatTimestamp,
+    loadChatSession,
+    refreshChatHistory
   } = useAIChat()
+
+  // Helper function to get user avatar
+  const getUserAvatar = () => {
+    if (!user) return null;
+    
+    // Try different possible locations for the avatar
+    return user.user_metadata?.avatar_url || 
+           user.user_metadata?.picture ||
+           null;
+  };
+
+  // Helper function to get user initials
+  const getUserInitials = () => {
+    if (!user) return 'U';
+    
+    const displayName = getUserDisplayName();
+    if (displayName === 'User') {
+      return user.email?.charAt(0)?.toUpperCase() || 'U';
+    }
+    
+    return displayName.charAt(0).toUpperCase();
+  };
+
+  // Helper function to get user display name
+  const getUserDisplayName = () => {
+    if (!user) return 'User';
+    
+    // Try different possible locations for the name
+    const name = user.user_metadata?.full_name || 
+                 user.user_metadata?.name ||
+                 user.user_metadata?.display_name ||
+                 user.user_metadata?.given_name + ' ' + user.user_metadata?.family_name ||
+                 user.email?.split('@')[0] ||
+                 'User';
+    
+    return name;
+  };
 
   // Set page as loaded after a brief delay to ensure smooth transition
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsPageLoaded(true);
-    }, 100);
-    return () => clearTimeout(timer);
+    setIsPageLoaded(true);
   }, []);
 
-  // Initialize with the initial prompt if provided
+  // Initialize with the initial prompt if provided or load existing chat session
   useEffect(() => {
     if (!sessionId) return; // Don't run without session
     
     const promptFromUrl = searchParams.get('prompt');
+    const sessionIdFromUrl = searchParams.get('sessionId');
     const prompt = initialPrompt || promptFromUrl;
     
-    if (prompt && !initializedRef.current && !isInitializing) {
+    // If we have a sessionId in URL, load that chat session
+    if (sessionIdFromUrl && !initializedRef.current) {
       initializedRef.current = true;
-      setIsInitializing(true);
+      
+      // Load the specific chat session immediately
+      loadChatSession(sessionIdFromUrl);
+    }
+    // If we have a prompt, send it as a new message
+    else if (prompt && !initializedRef.current) {
+      initializedRef.current = true;
       
       // Send the message immediately
       sendMessage(prompt);
     }
-  }, [initialPrompt, searchParams, isInitializing, sessionId]);
+  }, [initialPrompt, searchParams, sessionId, loadChatSession]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -75,6 +128,20 @@ export const BuzzberryChatPage = ({ initialPrompt, onBack }: BuzzberryChatPagePr
     }
   }, [inputValue]);
 
+  // Refresh chat history when component mounts
+  useEffect(() => {
+    console.log('Refreshing chat history on mount...');
+    refreshChatHistory();
+  }, [refreshChatHistory]);
+
+  // Refresh chat history when sidebar is opened
+  useEffect(() => {
+    if (isChatHistoryOpen) {
+      console.log('Refreshing chat history when sidebar opened...');
+      refreshChatHistory();
+    }
+  }, [isChatHistoryOpen, refreshChatHistory]);
+
   // Send message using AI chat hook
   const sendMessage = async (message: string) => {
     if (!sessionId) {
@@ -82,7 +149,7 @@ export const BuzzberryChatPage = ({ initialPrompt, onBack }: BuzzberryChatPagePr
       return;
     }
 
-    setIsInitializing(false);
+
     
     try {
       await aiSendMessage(message);
@@ -96,8 +163,10 @@ export const BuzzberryChatPage = ({ initialPrompt, onBack }: BuzzberryChatPagePr
     
     if (!inputValue.trim() || isLoading) return;
     
-    await sendMessage(inputValue.trim());
-    setInputValue('');
+    const message = inputValue.trim();
+    setInputValue(''); // Clear input immediately
+    
+    await sendMessage(message);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -126,6 +195,8 @@ export const BuzzberryChatPage = ({ initialPrompt, onBack }: BuzzberryChatPagePr
 
   return (
     <div className={`min-h-screen bg-black flex flex-col transition-opacity duration-300 ${isPageLoaded ? 'opacity-100' : 'opacity-0'}`}>
+
+      
       {/* Top navigation */}
       <div className="fixed top-0 left-0 right-0 z-40 flex justify-between items-center p-2 xs:p-4 bg-black/80 backdrop-blur-sm">
         {/* Back button */}
@@ -224,11 +295,16 @@ export const BuzzberryChatPage = ({ initialPrompt, onBack }: BuzzberryChatPagePr
                       {/* Avatar */}
                       <div className="flex-shrink-0">
                         {message.role === 'user' ? (
-                          <div className="w-6 xs:w-8 h-6 xs:h-8 bg-[#5661f6] rounded-full flex items-center justify-center">
-                            <span className="text-white text-xs xs:text-sm font-medium">U</span>
-                          </div>
+                          <Avatar className="w-8 xs:w-10 h-8 xs:h-10 bg-[#5661f6] rounded-full">
+                            {getUserAvatar() && (
+                              <AvatarImage src={getUserAvatar()} alt="Profile" />
+                            )}
+                            <AvatarFallback className="bg-[#5661f6] text-white text-sm xs:text-base font-medium">
+                              {getUserInitials()}
+                            </AvatarFallback>
+                          </Avatar>
                         ) : (
-                          <div className="w-6 xs:w-8 h-6 xs:h-8 rounded-full overflow-hidden relative">
+                          <div className="w-11 xs:w-14 h-11 xs:h-14 rounded-full overflow-hidden relative">
                             <video
                               className="w-full h-full object-cover"
                               autoPlay
@@ -241,9 +317,9 @@ export const BuzzberryChatPage = ({ initialPrompt, onBack }: BuzzberryChatPagePr
                                 src="https://epwm2xeeqm8soa6z.public.blob.vercel-storage.com/Buzzberry%20AI%20Chat.webm"
                                 type="video/webm"
                               />
-                              <div className="w-6 xs:w-8 h-6 xs:h-8 bg-[#0f1419] rounded-full flex items-center justify-center">
+                              <div className="w-11 xs:w-14 h-11 xs:h-14 bg-[#0f1419] rounded-full flex items-center justify-center">
                                 <img
-                                  className="w-3 xs:w-5 h-3 xs:h-5"
+                                  className="w-6 xs:w-8 h-6 xs:h-8"
                                   alt="Buzzberry AI"
                                   src="/AI Blurb Icon.svg"
                                 />
@@ -277,7 +353,7 @@ export const BuzzberryChatPage = ({ initialPrompt, onBack }: BuzzberryChatPagePr
                   <div className="flex justify-start">
                     <div className="flex items-start gap-2 xs:gap-3 max-w-[85%] xs:max-w-[70%]">
                       <div className="flex-shrink-0">
-                        <div className="w-6 xs:w-8 h-6 xs:h-8 rounded-full overflow-hidden">
+                        <div className="w-11 xs:w-14 h-11 xs:h-14 rounded-full overflow-hidden">
                           <video
                             className="w-full h-full object-cover"
                             autoPlay
@@ -290,9 +366,9 @@ export const BuzzberryChatPage = ({ initialPrompt, onBack }: BuzzberryChatPagePr
                               src="https://epwm2xeeqm8soa6z.public.blob.vercel-storage.com/Buzzberry%20AI%20Chat.webm"
                               type="video/webm"
                             />
-                            <div className="w-6 xs:w-8 h-6 xs:h-8 bg-[#0f1419] rounded-full flex items-center justify-center">
+                            <div className="w-11 xs:w-14 h-11 xs:h-14 bg-[#0f1419] rounded-full flex items-center justify-center">
                               <img
-                                className="w-3 xs:w-5 h-3 xs:h-5"
+                                className="w-6 xs:w-8 h-6 xs:h-8"
                                 alt="Buzzberry AI"
                                 src="/AI Blurb Icon.svg"
                               />
@@ -326,7 +402,7 @@ export const BuzzberryChatPage = ({ initialPrompt, onBack }: BuzzberryChatPagePr
                     <div className="flex items-start gap-2 xs:gap-3 max-w-[85%] xs:max-w-[70%]">
                       {/* AI Avatar */}
                       <div className="flex-shrink-0">
-                        <div className="w-6 xs:w-8 h-6 xs:h-8 rounded-full overflow-hidden relative">
+                        <div className="w-11 xs:w-14 h-11 xs:h-14 rounded-full overflow-hidden relative">
                           <video
                             className="w-full h-full object-cover"
                             autoPlay
@@ -339,9 +415,9 @@ export const BuzzberryChatPage = ({ initialPrompt, onBack }: BuzzberryChatPagePr
                               src="https://epwm2xeeqm8soa6z.public.blob.vercel-storage.com/Buzzberry%20AI%20Chat.webm"
                               type="video/webm"
                             />
-                            <div className="w-6 xs:w-8 h-6 xs:h-8 bg-[#0f1419] rounded-full flex items-center justify-center">
+                            <div className="w-11 xs:w-14 h-11 xs:h-14 bg-[#0f1419] rounded-full flex items-center justify-center">
                               <img
-                                className="w-3 xs:w-5 h-3 xs:h-5"
+                                className="w-6 xs:w-8 h-6 xs:h-8"
                                 alt="Buzzberry AI"
                                 src="/AI Blurb Icon.svg"
                               />
@@ -388,7 +464,7 @@ export const BuzzberryChatPage = ({ initialPrompt, onBack }: BuzzberryChatPagePr
                   type="submit"
                   variant="ghost"
                   size="sm"
-                  className="p-2 flex-shrink-0 hover:bg-transparent focus:bg-transparent hover:shadow-lg hover:shadow-black/30 rounded-full bg-transparent transition-shadow duration-200"
+                  className="p-3 flex-shrink-0 hover:bg-transparent focus:bg-transparent hover:shadow-lg hover:shadow-black/30 rounded-full bg-transparent transition-shadow duration-200"
                   disabled={!inputValue.trim() || isLoading}
                   style={{
                     filter: 'drop-shadow(0 0 0 transparent)',
@@ -402,7 +478,7 @@ export const BuzzberryChatPage = ({ initialPrompt, onBack }: BuzzberryChatPagePr
                   }}
                 >
                   <img
-                    className="h-4 xs:h-5 w-4 xs:w-5 transition-transform duration-200 hover:scale-110"
+                    className="h-6 xs:h-7 w-6 xs:w-7 transition-transform duration-200 hover:scale-110"
                     alt="Send prompt button"
                     src="/Send Prompt Button.png"
                   />
@@ -414,19 +490,22 @@ export const BuzzberryChatPage = ({ initialPrompt, onBack }: BuzzberryChatPagePr
       </div>
 
       {/* Overlay when sidebar is open */}
-      <div className={`fixed inset-0 bg-black transition-opacity duration-300 z-50 ${
+      <div className={`fixed inset-0 bg-black transition-opacity duration-300 z-[55] ${
         isChatHistoryOpen ? 'opacity-50' : 'opacity-0 pointer-events-none'
       }`} onClick={() => setIsChatHistoryOpen(false)} />
 
       {/* Chat History Sidebar */}
-      <div className={`fixed top-0 right-0 h-full w-80 transform transition-transform duration-300 ease-in-out z-50 ${
+      <div className={`fixed top-0 right-0 h-full w-80 transform transition-transform duration-300 ease-in-out z-[60] ${
         isChatHistoryOpen ? 'translate-x-0' : 'translate-x-full'
       }`}>
         <ChatHistorySection
           onClose={() => setIsChatHistoryOpen(false)}
-          onChatSelect={(chatId) => {
-            // TODO: Implement chat loading functionality
+          onChatSelect={async (chatId) => {
             console.log('Loading chat:', chatId)
+            // Don't close the sidebar immediately - let it stay open during loading
+            await loadChatSession(chatId)
+            // Only close sidebar after loading is complete
+            setIsChatHistoryOpen(false)
           }}
         />
       </div>

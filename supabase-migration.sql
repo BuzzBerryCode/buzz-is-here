@@ -24,9 +24,23 @@ BEGIN
             id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
             user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
             title TEXT,
+            subtitle TEXT DEFAULT '',
+            is_active BOOLEAN DEFAULT true,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         );
+    END IF;
+END $$;
+
+-- Add is_active column if it doesn't exist (for existing tables)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'chat_sessions' AND column_name = 'is_active') THEN
+        ALTER TABLE chat_sessions ADD COLUMN is_active BOOLEAN DEFAULT true;
+    END IF;
+    
+    IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'chat_sessions' AND column_name = 'subtitle') THEN
+        ALTER TABLE chat_sessions ADD COLUMN subtitle TEXT DEFAULT '';
     END IF;
 END $$;
 
@@ -42,6 +56,14 @@ BEGIN
             content TEXT NOT NULL,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         );
+    END IF;
+END $$;
+
+-- Add user_id column if it doesn't exist (for existing tables)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'chat_messages' AND column_name = 'user_id') THEN
+        ALTER TABLE chat_messages ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
     END IF;
 END $$;
 

@@ -1,5 +1,13 @@
 import React from 'react'
-import { useAIChat, type ChatSession } from '@/hooks/useAIChat'
+import { useAIChat } from '@/hooks/useAIChat'
+
+interface ChatSession {
+  id: string
+  title: string
+  lastMessage: string
+  lastUpdated: string
+  messageCount: number
+}
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -29,7 +37,15 @@ export const ChatHistorySection: React.FC<ChatHistorySectionProps> = ({
 
   const handleRemoveChat = (e: React.MouseEvent, chatId: string) => {
     e.stopPropagation()
-    removeChat(chatId)
+    if (confirm('Are you sure you want to delete this chat?')) {
+      removeChat(chatId)
+    }
+  }
+
+  const handleClearAll = () => {
+    if (confirm('Are you sure you want to clear all chat history? This action cannot be undone.')) {
+      clearHistory()
+    }
   }
 
   return (
@@ -42,7 +58,7 @@ export const ChatHistorySection: React.FC<ChatHistorySectionProps> = ({
           </h2>
           <div className="flex items-center gap-2">
             <button
-              onClick={clearHistory}
+              onClick={handleClearAll}
               className="text-xs text-gray-400 hover:text-white transition-colors"
             >
               Clear All
@@ -65,6 +81,7 @@ export const ChatHistorySection: React.FC<ChatHistorySectionProps> = ({
           <Button 
             className="w-full h-12 bg-[#5661f6] hover:bg-[#4752e0] rounded-full flex items-center justify-center gap-2"
             onClick={() => {
+              // Clear current session and redirect to AI search page
               window.location.href = '/dashboard/aisearch';
             }}
           >

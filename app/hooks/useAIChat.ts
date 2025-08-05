@@ -1,14 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabaseClient';
 
-export interface Message {
+interface Message {
   id: string
   content: string
   role: 'user' | 'assistant'
   timestamp: string
 }
 
-export interface ChatSession {
+interface ChatSession {
   id: string
   title: string
   lastMessage: string
@@ -16,24 +15,10 @@ export interface ChatSession {
   messageCount: number
 }
 
-interface DatabaseSession {
-  id: string
-  title: string
-  subtitle: string
-  updated_at: string
-  chat_messages: Array<{
-    id: string
-    content: string
-    role: string
-    created_at: string
-  }>
-}
-
-// Generate a proper UUID
-function generateUUID(): string {
+const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0
-    const v = c === 'x' ? r : (r & 0x3 | 0x8)
+    const v = c == 'x' ? r : (r & 0x3 | 0x8)
     return v.toString(16)
   })
 }
@@ -44,7 +29,8 @@ export const useAIChat = () => {
   const [sessionId, setSessionId] = useState<string>('')
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([])
   const [streamingMessage, setStreamingMessage] = useState<string>('')
-
+  const [currentSessionId, setCurrentSessionId] = useState<string>('')
+  const [isInitialized, setIsInitialized] = useState(false)
 
   // Initialize session with proper UUID
   useEffect(() => {
@@ -53,57 +39,41 @@ export const useAIChat = () => {
     }
   }, [sessionId])
 
-  // Load chat history from database
-  useEffect(() => {
-    const loadChatHistory = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+  // Load chat history from server-side API
+  const loadChatHistory = useCallback(async () => {
+    try {
+      console.log('Loading chat history from server API...')
+      
+      const response = await fetch('/api/chat-history', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
 
-        const { data: sessions, error } = await supabase
-          .from('chat_sessions')
-          .select(`
-            id,
-            title,
-            subtitle,
-            updated_at,
-            chat_messages (
-              id,
-              content,
-              role,
-              created_at
-            )
-          `)
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .order('updated_at', { ascending: false })
-
-        if (error) {
-          console.error('Error loading chat history:', error)
-          return
-        }
-
-        const formattedHistory: ChatSession[] = (sessions as DatabaseSession[]).map((session: DatabaseSession) => {
-          const messages = session.chat_messages || []
-          const lastMessage = messages[messages.length - 1]
-          
-          return {
-            id: session.id,
-            title: session.title,
-            lastMessage: lastMessage ? lastMessage.content.substring(0, 100) : '',
-            lastUpdated: session.updated_at,
-            messageCount: messages.length
-          }
-        })
-
-        setChatHistory(formattedHistory)
-      } catch (error) {
-        console.error('Error loading chat history:', error)
+      if (!response.ok) {
+        console.error('Failed to load chat history:', response.status)
+        return
       }
-    }
 
-    loadChatHistory()
-  }, [supabase])
+      const data = await response.json()
+      
+      if (data.chatHistory) {
+        console.log('Chat history loaded successfully:', data.chatHistory.length, 'sessions')
+        setChatHistory(data.chatHistory)
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error)
+    }
+  }, [])
+
+  // Load chat history when component mounts
+  useEffect(() => {
+    if (!isInitialized) {
+      setIsInitialized(true)
+      loadChatHistory()
+    }
+  }, [isInitialized, loadChatHistory])
 
   const sendMessage = useCallback(async (message: string) => {
     if (!message.trim() || isLoading) return
@@ -120,19 +90,29 @@ export const useAIChat = () => {
     setStreamingMessage('')
 
     try {
+      // Only send sessionId if we have a real session from the API
+      const requestBody: any = { message }
+      if (currentSessionId) {
+        requestBody.sessionId = currentSessionId
+      }
+
       const response = await fetch('/api/ai-chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          message,
-          sessionId
-        })
+        body: JSON.stringify(requestBody)
       })
 
       if (!response.ok) {
         throw new Error('Failed to send message')
+      }
+
+      // Check if the response includes a new session ID
+      const sessionIdHeader = response.headers.get('X-Session-ID')
+      if (sessionIdHeader && !currentSessionId) {
+        setCurrentSessionId(sessionIdHeader)
+        console.log('New session created with ID:', sessionIdHeader)
       }
 
       const reader = response.body?.getReader()
@@ -163,43 +143,7 @@ export const useAIChat = () => {
       setStreamingMessage('')
 
       // Refresh chat history after new message
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: sessions, error } = await supabase
-          .from('chat_sessions')
-          .select(`
-            id,
-            title,
-            subtitle,
-            updated_at,
-            chat_messages (
-              id,
-              content,
-              role,
-              created_at
-            )
-          `)
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .order('updated_at', { ascending: false })
-
-        if (!error && sessions) {
-          const formattedHistory: ChatSession[] = (sessions as DatabaseSession[]).map((session: DatabaseSession) => {
-            const messages = session.chat_messages || []
-            const lastMessage = messages[messages.length - 1]
-            
-            return {
-              id: session.id,
-              title: session.title,
-              lastMessage: lastMessage ? lastMessage.content.substring(0, 100) : '',
-              lastUpdated: session.updated_at,
-              messageCount: messages.length
-            }
-          })
-
-          setChatHistory(formattedHistory)
-        }
-      }
+      loadChatHistory()
 
     } catch (error) {
       console.error('Error sending message:', error)
@@ -214,52 +158,71 @@ export const useAIChat = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [isLoading, sessionId, supabase])
+  }, [isLoading, currentSessionId, loadChatHistory])
 
   const clearMessages = useCallback(() => {
     setMessages([])
     setSessionId(generateUUID())
+    setCurrentSessionId('')
     setStreamingMessage('')
   }, [])
 
   const removeChat = useCallback(async (chatId: string) => {
     try {
-      const { error } = await supabase
-        .from('chat_sessions')
-        .update({ is_active: false })
-        .eq('id', chatId)
+      console.log('Deleting chat session:', chatId)
+      
+      const response = await fetch('/api/chat-history/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ chatId })
+      })
 
-      if (error) {
-        console.error('Error removing chat:', error)
+      if (!response.ok) {
+        console.error('Failed to delete chat session:', response.status)
         return
       }
 
-      setChatHistory(prev => prev.filter(chat => chat.id !== chatId))
+      const data = await response.json()
+      
+      if (data.success) {
+        console.log('Chat session deleted successfully:', chatId)
+        // Remove from local state
+        setChatHistory(prev => prev.filter(chat => chat.id !== chatId))
+      }
     } catch (error) {
       console.error('Error removing chat:', error)
     }
-  }, [supabase])
+  }, [])
 
   const clearHistory = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      console.log('Clearing all chat history')
+      
+      const response = await fetch('/api/chat-history/clear-all', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
 
-      const { error } = await supabase
-        .from('chat_sessions')
-        .update({ is_active: false })
-        .eq('user_id', user.id)
-
-      if (error) {
-        console.error('Error clearing history:', error)
+      if (!response.ok) {
+        console.error('Failed to clear chat history:', response.status)
         return
       }
 
-      setChatHistory([])
+      const data = await response.json()
+      
+      if (data.success) {
+        console.log('All chat history cleared successfully')
+        // Clear local state
+        setChatHistory([])
+      }
     } catch (error) {
       console.error('Error clearing history:', error)
     }
-  }, [supabase])
+  }, [])
 
   const formatTimestamp = useCallback((timestamp: string) => {
     const date = new Date(timestamp)
@@ -278,6 +241,41 @@ export const useAIChat = () => {
     }
   }, [])
 
+  const loadChatSession = useCallback(async (chatId: string) => {
+    try {
+      console.log('Loading chat session from server API:', chatId)
+      
+      const response = await fetch('/api/chat-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sessionId: chatId })
+      })
+
+      if (!response.ok) {
+        console.error('Failed to load chat session:', response.status)
+        return
+      }
+
+      const data = await response.json()
+      
+      if (data.session && data.messages) {
+        // Set the current session ID and messages immediately
+        setCurrentSessionId(data.session.id)
+        setMessages(data.messages)
+        console.log('Chat session loaded successfully:', data.session.id, 'with', data.messages.length, 'messages')
+      }
+    } catch (error) {
+      console.error('Error loading chat session:', error)
+    }
+  }, [])
+
+  const refreshChatHistory = useCallback(async () => {
+    console.log('Refreshing chat history...')
+    await loadChatHistory()
+  }, [loadChatHistory])
+
   return {
     messages,
     isLoading,
@@ -288,6 +286,8 @@ export const useAIChat = () => {
     clearMessages,
     removeChat,
     clearHistory,
-    formatTimestamp
+    formatTimestamp,
+    loadChatSession,
+    refreshChatHistory
   }
 } 

@@ -11,6 +11,7 @@ import {
   searchInfluencers,
   getInfluencerByHandle
 } from '@/lib/ai/database'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
     }
 
-    // Get authenticated user
+    // Get authenticated user for verification
     const supabase = createRouteHandlerClient({ cookies })
 
     // Get authenticated user
@@ -33,32 +34,54 @@ export async function POST(request: NextRequest) {
       authError: authError?.message 
     });
 
-    // Use a fallback user ID if no authenticated user
-    let userId = user?.id;
-    if (!userId) {
-      console.log('No authenticated user found, using anonymous session');
-      // Try to get session for anonymous user
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id) {
-        userId = session.user.id;
-        console.log('Using anonymous user ID:', userId);
-      } else {
-        // Create a temporary anonymous user ID for this session
-        userId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        console.log('Created temporary user ID:', userId);
-      }
+    // Ensure we have a valid authenticated user
+    if (!user?.id) {
+      console.log('No authenticated user found, returning error');
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
+    const userId = user.id;
+
     console.log('Using user ID:', userId);
+
+    // Create service role client for database operations
+    const supabaseService = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    // Test if chat_sessions table exists and has data
+    try {
+      const { data: testData, error: testError } = await supabaseService
+        .from('chat_sessions')
+        .select('*')
+        .limit(1);
+      
+      console.log('Chat sessions table test:', { 
+        hasData: !!testData, 
+        dataLength: testData?.length || 0, 
+        error: testError?.message 
+      });
+    } catch (error) {
+      console.error('Error testing chat_sessions table:', error);
+    }
 
     // Create or get chat session
     let currentSessionId = sessionId
     if (!currentSessionId) {
-      const newSession = await createChatSession(userId, message.substring(0, 50))
+      console.log('Creating new chat session for user:', userId);
+      const newSession = await createChatSession(userId, message.substring(0, 50), '', supabaseService)
+      console.log('createChatSession result:', newSession);
+      
       if (!newSession) {
+        console.error('Failed to create chat session - returning error');
         return NextResponse.json({ error: 'Failed to create chat session' }, { status: 500 })
       }
+      
       currentSessionId = newSession.id
+      console.log('New session created with ID:', currentSessionId);
+    } else {
+      console.log('Using existing session ID:', currentSessionId);
     }
 
     // Search for relevant creators
@@ -114,11 +137,19 @@ export async function POST(request: NextRequest) {
       console.error('Error searching influencers:', error)
     }
 
-    // Get full chat history for context (like ChatGPT)
+    // Save user message to database FIRST (so it's included in context)
+    try {
+      await createChatMessage(currentSessionId, 'user', message, supabaseService)
+      console.log('User message saved successfully');
+    } catch (error) {
+      console.error('Error saving user message:', error)
+    }
+
+    // Get full chat history for context (like ChatGPT) - NOW INCLUDES THE CURRENT MESSAGE
     let chatHistory: any[] = []
     try {
       console.log('Fetching chat history for session:', currentSessionId);
-      chatHistory = await getChatMessages(currentSessionId, 50) // Get last 50 messages for context
+      chatHistory = await getChatMessages(currentSessionId, 50, supabaseService) // Get last 50 messages for context
       console.log('Chat history loaded:', chatHistory.length, 'messages');
     } catch (error) {
       console.error('Error getting chat history:', error)
@@ -129,6 +160,11 @@ export async function POST(request: NextRequest) {
       role: msg.role,
       content: msg.content
     })).slice(-20); // Keep last 20 messages for context (to avoid token limits)
+
+    console.log('Conversation context for AI:', {
+      messageCount: conversationContext.length,
+      context: conversationContext.map(msg => `${msg.role}: ${msg.content.substring(0, 50)}...`)
+    });
 
     // Get database stats
     let influencerStats: any = {}
@@ -151,23 +187,17 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Save user message to database
-    try {
-      await createChatMessage(currentSessionId, 'user', message)
-    } catch (error) {
-      console.error('Error saving user message:', error)
-    }
-
     // Save AI response to database
     try {
-      await createChatMessage(currentSessionId, 'assistant', aiResponse.content)
+      await createChatMessage(currentSessionId, 'assistant', aiResponse.content, supabaseService)
+      console.log('AI response saved successfully');
     } catch (error) {
       console.error('Error saving AI message:', error)
     }
 
     // Update chat session
     try {
-      await updateChatSession(currentSessionId, { title: message.substring(0, 50) })
+      await updateChatSession(currentSessionId, { title: message.substring(0, 50) }, supabaseService)
     } catch (error) {
       console.error('Error updating chat session:', error)
     }
@@ -200,6 +230,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'text/plain; charset=utf-8',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
+        'X-Session-ID': currentSessionId, // Include session ID in response headers
       },
     })
 

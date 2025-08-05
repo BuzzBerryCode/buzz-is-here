@@ -47,35 +47,62 @@ export default function SignUpPage() {
     }
 
     try {
-      // Use direct Supabase signup
-      const { data, error } = await supabase.auth.signUp({
+      // First, try to sign in to check if user already exists
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
       });
 
-      if (error) {
-        console.error('Signup error:', error);
+      if (signInData.user && signInData.session) {
+        // User already exists and password is correct - sign them in
+        console.log('User already exists, signing in:', signInData.user.email);
+        router.push('/dashboard');
+        return;
+      }
+
+      // If sign in failed with "Invalid login credentials", try to create new user
+      if (signInError && signInError.message.toLowerCase().includes('invalid login credentials')) {
+        console.log('User does not exist, creating new account');
         
-        // Handle specific database errors
-        if (error.message.includes('Database error')) {
-          setError('Account created but there was an issue with profile setup. You can still sign in.');
-          // Still redirect to dashboard since the user was created
-          setTimeout(() => {
-            router.push('/dashboard');
-          }, 2000);
+        // Create new user
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
+        });
+
+        if (error) {
+          console.error('Signup error:', error);
+          
+          // Handle specific database errors
+          if (error.message.includes('Database error')) {
+            setError('Account created but there was an issue with profile setup. You can still sign in.');
+            // Still redirect to dashboard since the user was created
+            setTimeout(() => {
+              router.push('/dashboard');
+            }, 2000);
+          } else {
+            setError(error.message);
+          }
         } else {
-          setError(error.message);
+          // Signup succeeded
+          if (data.user && data.session) {
+            // User was created and automatically signed in
+            console.log('User created and signed in successfully:', data.user.email);
+            router.push('/dashboard');
+          } else if (data.user && !data.session) {
+            // User was created but needs email confirmation
+            setError('Please check your email for a confirmation link');
+          } else {
+            setError('An unexpected error occurred during signup');
+          }
         }
-      } else {
-        // Signup succeeded
-        if (data.user && !data.session) {
-          setError('Please check your email for a confirmation link');
-        } else if (data.session) {
-          router.push('/dashboard');
-        }
+      } else if (signInError) {
+        // Some other sign in error occurred
+        console.error('Sign in error:', signInError);
+        setError(signInError.message);
       }
     } catch (err) {
       console.error('Signup error:', err);
